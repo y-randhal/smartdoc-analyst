@@ -119,6 +119,38 @@ export class DocumentsService implements OnModuleInit {
     };
   }
 
+  async *ingestFileWithProgress(
+    buffer: Buffer,
+    filename: string,
+    mimeType: string
+  ): AsyncGenerator<
+    { stage: 'parsing' } | { stage: 'chunking' } | { stage: 'indexing'; total: number } | { stage: 'done'; result: IngestionResponse }
+  > {
+    const service = this.getIngestionService();
+    for await (const event of service.ingestDocumentWithProgress(buffer, filename, mimeType)) {
+      if (event.stage === 'done') {
+        const { result } = event;
+        this.registry.set(result.documentId, {
+          id: result.documentId,
+          filename: result.filename,
+          chunkIds: result.chunkIds,
+          uploadedAt: new Date(),
+        });
+        this.save();
+        yield {
+          stage: 'done',
+          result: {
+            documentId: result.documentId,
+            chunks: result.chunks,
+            filename: result.filename,
+          },
+        };
+      } else {
+        yield event as { stage: 'parsing' } | { stage: 'chunking' } | { stage: 'indexing'; total: number };
+      }
+    }
+  }
+
   listDocuments(): DocumentListResponse {
     const documents: IndexedDocument[] = Array.from(this.registry.values()).map(
       (entry) => ({

@@ -10,6 +10,12 @@ import type {
 
 export type UploadResult = { ok: true; data: IngestionResponse } | { ok: false; error: string };
 
+export type UploadProgress =
+  | { stage: 'parsing' }
+  | { stage: 'chunking' }
+  | { stage: 'indexing'; total: number }
+  | { stage: 'done'; result: IngestionResponse };
+
 @Injectable({ providedIn: 'root' })
 export class DocumentsService {
   private readonly apiUrl = `${environment.apiUrl}/documents`;
@@ -50,5 +56,84 @@ export class DocumentsService {
         return of({ ok: false as const, error: Array.isArray(msg) ? msg.join(', ') : msg });
       })
     );
+  }
+
+  /**
+   * Upload with progress events (parsing, chunking, indexing)
+   */
+  uploadWithProgress(
+    file: File
+  ): Observable<UploadResult | { progress: UploadProgress }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return new Observable((subscriber) => {
+      fetch(`${environment.apiUrl}/documents/upload-stream`, {
+        method: 'POST',
+        body: formData,
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            subscriber.next({
+              ok: false as const,
+              error: err?.error ?? res.statusText ?? 'Upload failed',
+            });
+            subscriber.complete();
+            return;
+          }
+          const reader = res.body?.getReader();
+          if (!reader) {
+            subscriber.next({ ok: false as const, error: 'No response body' });
+            subscriber.complete();
+            return;
+          }
+          const decoder = new TextDecoder();
+          let buffer = '';
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              buffer += decoder.decode(value, { stream: true });
+              const lines = buffer.split('\n');
+              buffer = lines.pop() ?? '';
+              for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                  const event = JSON.parse(line) as UploadProgress | { error?: string };
+                  if ('error' in event) {
+                    subscriber.next({ ok: false as const, error: event.error ?? 'Unknown error' });
+                    break;
+                  }
+                  if ('stage' in event) {
+                    const progress = event as UploadProgress;
+                    if (progress.stage === 'done') {
+                      subscriber.next({ ok: true as const, data: progress.result });
+                      this.list().subscribe();
+                    } else {
+                      subscriber.next({ progress });
+                    }
+                  }
+                } catch {
+                  // skip invalid JSON
+                }
+              }
+            }
+          } catch (e) {
+            subscriber.next({
+              ok: false as const,
+              error: e instanceof Error ? e.message : 'Upload failed',
+            });
+          }
+          subscriber.complete();
+        })
+        .catch((e) => {
+          subscriber.next({
+            ok: false as const,
+            error: e?.message ?? 'Upload failed',
+          });
+          subscriber.complete();
+        });
+    });
   }
 }

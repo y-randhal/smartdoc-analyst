@@ -69,6 +69,6 @@ npm run serve:frontend
 - **ChatModule**: NestJS module that receives prompts, queries Pinecone, returns LLM responses. Includes conversation history in RAG prompt for contextual answers
 - **Rate limiting**: 60 requests/minute per IP (configurable via `THROTTLE_TTL`, `THROTTLE_LIMIT`). `/health` excluded
 - **Logging**: Pino structured JSON logs. Use `node dist/apps/server/main.js | npx pino-pretty` for readable dev output
-- **DocumentsModule**: Upload PDF/TXT/MD files; parses, chunks, embeds, and upserts to Pinecone. Registry persisted to `data/documents.json`
+- **DocumentsModule**: Upload PDF/TXT/MD files; parses, chunks, embeds, and upserts to Pinecone. Registry persisted to `data/documents.json`. `POST /api/documents/upload-stream` streams progress (parsing → chunking → indexing)
 - **ConversationsModule**: Persists conversations to `data/conversations.json` (survives server restart)
 - **ChatService** (frontend): RxJS-based reactive stream for chat messages

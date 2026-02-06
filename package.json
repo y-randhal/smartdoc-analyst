@@ -11,14 +11,14 @@
   },
   "private": true,
   "dependencies": {
-    "@angular/animations": "^19.2.18",
-    "@angular/common": "^19.2.18",
-    "@angular/compiler": "^19.2.18",
-    "@angular/core": "^19.2.18",
-    "@angular/forms": "^19.2.18",
-    "@angular/platform-browser": "^19.2.18",
-    "@angular/platform-browser-dynamic": "^19.2.18",
-    "@angular/router": "^19.2.18",
+    "@angular/animations": "^20.3.0",
+    "@angular/common": "^20.3.0",
+    "@angular/compiler": "^20.3.0",
+    "@angular/core": "^20.3.0",
+    "@angular/forms": "^20.3.0",
+    "@angular/platform-browser": "^20.3.0",
+    "@angular/platform-browser-dynamic": "^20.3.0",
+    "@angular/router": "^20.3.0",
     "@huggingface/inference": "^4.0.5",
     "@langchain/community": "^0.3.0",
     "@langchain/core": "^0.3.0",
@@ -43,8 +43,11 @@
     "zone.js": "^0.15.0"
   },
   "devDependencies": {
-    "@angular-devkit/build-angular": "^19.2.18",
-    "@nestjs/testing": "^11.1.13",
+    "@angular-devkit/build-angular": "^20.3.0",
+    "@angular-devkit/core": "^20.3.0",
+    "@angular-devkit/schematics": "^20.3.0",
+    "@angular/compiler-cli": "^20.3.0",
+    "@nestjs/testing": "^10.0.0",
     "@nx/angular": "^22.4.5",
     "@nx/jest": "22.4.5",
     "@nx/js": "^22.4.5",
@@ -69,6 +72,6 @@
     "tailwindcss": "^3.4.0",
     "ts-jest": "^29.4.0",
     "ts-node": "10.9.1",
-    "typescript": "~5.5.0"
+    "typescript": "~5.8.0"
   }
 }

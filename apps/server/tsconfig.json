@@ -4,7 +4,12 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "outDir": "../../dist/out-tsc",
-    "types": ["node"]
+    "types": ["node"],
+    "baseUrl": "../..",
+    "paths": {
+      "@smartdoc-analyst/api-interfaces": ["libs/api-interfaces/src/index.ts"],
+      "@smartdoc-analyst/ai-engine": ["libs/ai-engine/src/index.ts"]
+    }
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "**/*.spec.ts"]

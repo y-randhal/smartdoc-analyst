@@ -139,6 +139,50 @@ export class IngestionService {
   }
 
   /**
+   * Ingest with progress events for UI feedback
+   */
+  async *ingestDocumentWithProgress(
+    buffer: Buffer,
+    filename: string,
+    mimeType: string
+  ): AsyncGenerator<
+    { stage: 'parsing' } | { stage: 'chunking' } | { stage: 'indexing'; total: number } | { stage: 'done'; result: IngestionResult }
+  > {
+    IngestionService.validateFileSize(buffer.length);
+
+    if (!IngestionService.isSupportedMimeType(mimeType) && !IngestionService.isSupportedFilename(filename)) {
+      throw new Error(`Unsupported file type. Supported: PDF, TXT, MD`);
+    }
+
+    yield { stage: 'parsing' };
+    const documents = await this.loadDocuments(buffer, filename, mimeType);
+
+    yield { stage: 'chunking' };
+    const chunks = await this.textSplitter.splitDocuments(documents);
+
+    if (chunks.length === 0) {
+      throw new Error('No content could be extracted from the document');
+    }
+
+    const docId = crypto.randomUUID();
+    const ids = chunks.map((_, i) => `${docId}-chunk-${i}`);
+
+    yield { stage: 'indexing', total: chunks.length };
+    const store = await this.getVectorStore();
+    await store.addDocuments(chunks, { ids });
+
+    yield {
+      stage: 'done',
+      result: {
+        documentId: docId,
+        chunks: chunks.length,
+        filename,
+        chunkIds: ids,
+      },
+    };
+  }
+
+  /**
    * Delete a document's chunks from Pinecone by their IDs
    */
   async deleteDocument(chunkIds: string[]): Promise<void> {

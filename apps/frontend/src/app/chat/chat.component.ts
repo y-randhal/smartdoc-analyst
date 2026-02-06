@@ -10,7 +10,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatService } from '../services/chat.service';
-import { DocumentsService, type UploadResult } from '../services/documents.service';
+import { DocumentsService, type UploadResult, type UploadProgress } from '../services/documents.service';
 import { MarkdownPipe } from '../pipes/markdown.pipe';
 
 @Component({
@@ -32,7 +32,7 @@ import { MarkdownPipe } from '../pipes/markdown.pipe';
             [disabled]="uploading"
           />
           @if (uploading) {
-            <span class="text-sm text-slate-400">Uploading...</span>
+            <span class="text-sm text-slate-400">{{ uploadProgress }}</span>
           } @else {
             <span class="text-sm text-slate-400">Drop PDF, TXT or MD here, or click to upload</span>
             <span class="text-xs text-slate-500 mt-1">Max 10MB</span>
@@ -199,6 +199,7 @@ export class ChatComponent implements AfterViewChecked, OnInit {
 
   prompt = '';
   uploading = false;
+  uploadProgress = 'Uploading...';
   uploadError = '';
   uploadSuccess = '';
   documentsExpanded = false;
@@ -250,6 +251,21 @@ export class ChatComponent implements AfterViewChecked, OnInit {
     }
   }
 
+  private progressLabel(progress: UploadProgress): string {
+    switch (progress.stage) {
+      case 'parsing':
+        return 'Parsing document...';
+      case 'chunking':
+        return 'Chunking text...';
+      case 'indexing':
+        return `Indexing ${progress.total} chunks...`;
+      case 'done':
+        return 'Done';
+      default:
+        return 'Processing...';
+    }
+  }
+
   onFileSelected(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -258,17 +274,23 @@ export class ChatComponent implements AfterViewChecked, OnInit {
     this.uploadError = '';
     this.uploadSuccess = '';
     this.uploading = true;
+    this.uploadProgress = 'Uploading...';
 
-    this.documentsService.upload(file).subscribe({
-      next: (result: UploadResult) => {
-        this.uploading = false;
-        input.value = '';
-        if (result.ok) {
-          this.uploadSuccess = `"${result.data.filename}" indexed (${result.data.chunks} chunks)`;
-          this.documentsExpanded = true;
-          setTimeout(() => (this.uploadSuccess = ''), 4000);
+    this.documentsService.uploadWithProgress(file).subscribe({
+      next: (event) => {
+        if ('progress' in event) {
+          this.uploadProgress = this.progressLabel(event.progress);
+          this.cdr.detectChanges();
         } else {
-          this.uploadError = (result as any).error ?? 'Unknown upload error.';
+          this.uploading = false;
+          input.value = '';
+          if (event.ok) {
+            this.uploadSuccess = `"${event.data.filename}" indexed (${event.data.chunks} chunks)`;
+            this.documentsExpanded = true;
+            setTimeout(() => (this.uploadSuccess = ''), 4000);
+          } else {
+            this.uploadError = (event as any).error ?? (event as any).message ?? 'Unknown upload error.';
+          }
         }
       },
       error: () => {
