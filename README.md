@@ -64,5 +64,6 @@ npm run serve:frontend
 - **api-interfaces**: Shared contracts between frontend and backend
 - **ai-engine**: LangChain.js orchestration (Groq LLM, Pinecone vector store, Hugging Face embeddings)
 - **ChatModule**: NestJS module that receives prompts, queries Pinecone, returns LLM responses
-- **DocumentsModule**: Upload PDF/TXT/MD files; parses, chunks, embeds, and upserts to Pinecone
+- **DocumentsModule**: Upload PDF/TXT/MD files; parses, chunks, embeds, and upserts to Pinecone. Registry persisted to `data/documents.json`
+- **ConversationsModule**: Persists conversations to `data/conversations.json` (survives server restart)
 - **ChatService** (frontend): RxJS-based reactive stream for chat messages

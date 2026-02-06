@@ -1,13 +1,76 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { readFile, writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
 import type {
   Conversation,
   ConversationMessage,
   ConversationSummary,
 } from '@smartdoc-analyst/api-interfaces';
 
+interface StoredConversation {
+  id: string;
+  messages: Array<Omit<ConversationMessage, 'timestamp'> & { timestamp: string }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 @Injectable()
-export class ConversationsService {
+export class ConversationsService implements OnModuleInit {
   private readonly conversations = new Map<string, Conversation>();
+  private storagePath: string;
+
+  constructor(private readonly config: ConfigService) {
+    const dataDir = this.config.get<string>('DATA_DIR') ?? join(process.cwd(), 'data');
+    this.storagePath = join(dataDir, 'conversations.json');
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.load();
+  }
+
+  private async load(): Promise<void> {
+    try {
+      const raw = await readFile(this.storagePath, 'utf-8');
+      const stored: StoredConversation[] = JSON.parse(raw);
+      this.conversations.clear();
+      for (const s of stored) {
+        const messages: ConversationMessage[] = s.messages.map((m) => ({
+          ...m,
+          timestamp: new Date(m.timestamp),
+        }));
+        this.conversations.set(s.id, {
+          id: s.id,
+          messages,
+          createdAt: new Date(s.createdAt),
+          updatedAt: new Date(s.updatedAt),
+        });
+      }
+    } catch {
+      // File doesn't exist or invalid - start fresh
+    }
+  }
+
+  private async save(): Promise<void> {
+    try {
+      const dir = join(this.storagePath, '..');
+      await mkdir(dir, { recursive: true });
+      const stored: StoredConversation[] = Array.from(this.conversations.values()).map(
+        (c) => ({
+          id: c.id,
+          messages: c.messages.map((m) => ({
+            ...m,
+            timestamp: m.timestamp instanceof Date ? m.timestamp.toISOString() : String(m.timestamp),
+          })),
+          createdAt: c.createdAt.toISOString(),
+          updatedAt: c.updatedAt.toISOString(),
+        })
+      );
+      await writeFile(this.storagePath, JSON.stringify(stored, null, 2), 'utf-8');
+    } catch (err) {
+      console.error('Failed to save conversations:', err);
+    }
+  }
 
   list(): ConversationSummary[] {
     return Array.from(this.conversations.values())
@@ -33,6 +96,7 @@ export class ConversationsService {
       updatedAt: now,
     };
     this.conversations.set(id, conversation);
+    this.save();
     return conversation;
   }
 
@@ -50,6 +114,7 @@ export class ConversationsService {
 
     conv.messages.push(message);
     conv.updatedAt = new Date();
+    this.save();
   }
 
   appendAssistantMessage(conversationId: string, message: ConversationMessage): void {
@@ -58,10 +123,13 @@ export class ConversationsService {
 
     conv.messages.push(message);
     conv.updatedAt = new Date();
+    this.save();
   }
 
   delete(id: string): boolean {
-    return this.conversations.delete(id);
+    const deleted = this.conversations.delete(id);
+    if (deleted) this.save();
+    return deleted;
   }
 
   private getTitle(conv: Conversation): string {

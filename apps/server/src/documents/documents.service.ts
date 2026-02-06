@@ -1,5 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { readFile, writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
 import { IngestionService } from '@smartdoc-analyst/ai-engine';
 import type {
   IngestionResponse,
@@ -14,12 +16,63 @@ interface DocumentEntry {
   uploadedAt: Date;
 }
 
+interface StoredDocumentEntry {
+  id: string;
+  filename: string;
+  chunkIds: string[];
+  uploadedAt: string;
+}
+
 @Injectable()
-export class DocumentsService {
+export class DocumentsService implements OnModuleInit {
   private ingestionService: IngestionService | null = null;
   private readonly registry = new Map<string, DocumentEntry>();
+  private storagePath: string;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(private readonly config: ConfigService) {
+    const dataDir = this.config.get<string>('DATA_DIR') ?? join(process.cwd(), 'data');
+    this.storagePath = join(dataDir, 'documents.json');
+  }
+
+  async onModuleInit(): Promise<void> {
+    await this.load();
+  }
+
+  private async load(): Promise<void> {
+    try {
+      const raw = await readFile(this.storagePath, 'utf-8');
+      const stored: StoredDocumentEntry[] = JSON.parse(raw);
+      this.registry.clear();
+      for (const s of stored) {
+        this.registry.set(s.id, {
+          id: s.id,
+          filename: s.filename,
+          chunkIds: s.chunkIds,
+          uploadedAt: new Date(s.uploadedAt),
+        });
+      }
+    } catch {
+      // File doesn't exist or invalid - start fresh
+    }
+  }
+
+  private async save(): Promise<void> {
+    try {
+      const dir = join(this.storagePath, '..');
+      await mkdir(dir, { recursive: true });
+      const stored: StoredDocumentEntry[] = Array.from(this.registry.values()).map(
+        (e) => ({
+          id: e.id,
+          filename: e.filename,
+          chunkIds: e.chunkIds,
+          uploadedAt: e.uploadedAt.toISOString(),
+        })
+      );
+      await writeFile(this.storagePath, JSON.stringify(stored, null, 2), 'utf-8');
+    } catch (err) {
+      console.error('Failed to save documents registry:', err);
+    }
+  }
 
   private getIngestionService(): IngestionService {
     if (!this.ingestionService) {
@@ -56,6 +109,7 @@ export class DocumentsService {
       chunkIds: result.chunkIds,
       uploadedAt: new Date(),
     });
+    this.save();
 
     return {
       documentId: result.documentId,
@@ -83,6 +137,7 @@ export class DocumentsService {
     const service = this.getIngestionService();
     await service.deleteDocument(entry.chunkIds);
     this.registry.delete(id);
+    this.save();
     return true;
   }
 }
