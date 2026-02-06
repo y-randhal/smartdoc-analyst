@@ -1,8 +1,52 @@
 # SmartDoc Analyst
 
-RAG (Retrieval Augmented Generation) application for document analysis, built with NX monorepo.
+[![CI](https://github.com/y-randhal/smartdoc-analyst/actions/workflows/ci.yml/badge.svg)](https://github.com/y-randhal/smartdoc-analyst/actions)
+[![Node 20](https://img.shields.io/badge/Node-20-339933?logo=node.js)](https://nodejs.org)
+[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](./docker-compose.yml)
+[![Angular](https://img.shields.io/badge/Angular-17+-DD0031?logo=angular)](https://angular.io)
+[![NestJS](https://img.shields.io/badge/NestJS-E0234E?logo=nestjs)](https://nestjs.com)
+[![RAG](https://img.shields.io/badge/RAG-LangChain-1C3C3C)](https://js.langchain.com)
+[![License](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
 
-## Structure
+RAG (Retrieval Augmented Generation) application for document analysis. Upload PDFs, ask questions, get AI-powered answers with source citations. Built with NX monorepo, LangChain, Groq, and Pinecone.
+
+---
+
+## ✨ Features
+
+| Capability | Stack |
+|------------|-------|
+| 🤖 LLM | Groq (Llama 3.3 70B) |
+| 📐 Embeddings | Hugging Face (all-MiniLM-L6-v2) |
+| 📦 Vector DB | Pinecone |
+| 🔗 RAG Pipeline | LangChain.js |
+| 📄 Documentos | PDF, TXT, MD |
+| 💬 Chat contextual | Histórico no prompt |
+| ⚡ Streaming | Respostas em tempo real |
+
+---
+
+## 🔄 Fluxo RAG
+
+```mermaid
+flowchart TB
+    subgraph Ingestão
+        A[📄 PDF/TXT/MD] --> B[RecursiveCharacterTextSplitter]
+        B --> C[HuggingFace Embeddings]
+        C --> D[(Pinecone)]
+    end
+    subgraph Query
+        Q[❓ Pergunta] --> C
+        D --> E[Similarity Search]
+        E --> F[Contexto Top-K]
+        F --> G[Groq LLM]
+        G --> R[📝 Resposta + Sources]
+    end
+```
+
+---
+
+## 📁 Structure
 
 ```
 smartdoc-analyst/
@@ -13,6 +57,8 @@ smartdoc-analyst/
 │   ├── api-interfaces/  # Shared TypeScript interfaces
 │   └── ai-engine/      # LangChain RAG orchestration
 ```
+
+---
 
 ## Setup
 
@@ -74,6 +120,8 @@ The application will be available at:
 - **API:** http://localhost:3000
 - **API Docs:** http://localhost:3000/api/docs
 
+---
+
 ## Commands
 
 | Command | Description |
@@ -86,6 +134,8 @@ The application will be available at:
 | `nx run server:test` | Run server unit and e2e tests (29 tests) |
 | `nx run frontend:test` | Run frontend unit tests (components, services, pipes) |
 
+---
+
 ## API Documentation
 
 Interactive API documentation is available via Swagger/OpenAPI:
@@ -96,6 +146,8 @@ Interactive API documentation is available via Swagger/OpenAPI:
   - View request/response schemas
   - See example requests and responses
   - All endpoints documented with descriptions and examples
+
+---
 
 ## CI/CD
 
@@ -111,7 +163,7 @@ See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 - `GET /health?checkServices=true` - Full check with connectivity tests to Pinecone, Groq, and Hugging Face
 - Returns `{ status, timestamp, env, services? }` for monitoring
 
-**API Documentation:** Swagger/OpenAPI docs available at `http://localhost:3000/api/docs` when the server is running.
+---
 
 ## Docker
 
@@ -156,6 +208,8 @@ HUGGINGFACE_API_KEY=your_key_here
 ```
 
 Docker Compose will automatically load these variables.
+
+---
 
 ## Architecture
 
