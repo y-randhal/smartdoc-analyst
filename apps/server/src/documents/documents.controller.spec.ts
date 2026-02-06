@@ -13,7 +13,6 @@ jest.mock('@smartdoc-analyst/ai-engine', () => ({
 
 describe('DocumentsController', () => {
   let controller: DocumentsController;
-  let documentsService: DocumentsService;
 
   const mockDocumentsService = {
     listDocuments: jest.fn(),
@@ -37,7 +36,6 @@ describe('DocumentsController', () => {
     }).compile();
 
     controller = module.get<DocumentsController>(DocumentsController);
-    documentsService = module.get<DocumentsService>(DocumentsService);
   });
 
   it('should be defined', () => {

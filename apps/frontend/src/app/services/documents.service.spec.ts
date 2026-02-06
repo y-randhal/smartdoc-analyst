@@ -77,7 +77,7 @@ describe('DocumentsService', () => {
           uploadedAt: new Date().toISOString(),
         },
       ];
-      (service as any).listSubject.next(initialDocs);
+      (service as unknown as { listSubject: { next: (d: unknown[]) => void } }).listSubject.next(initialDocs);
 
       service.delete('doc-1').subscribe((deleted) => {
         expect(deleted).toBe(true);
@@ -102,7 +102,7 @@ describe('DocumentsService', () => {
           uploadedAt: new Date().toISOString(),
         },
       ];
-      (service as any).listSubject.next(initialDocs);
+      (service as unknown as { listSubject: { next: (d: unknown[]) => void } }).listSubject.next(initialDocs);
 
       service.delete('doc-1').subscribe((deleted) => {
         expect(deleted).toBe(false);
@@ -128,6 +128,7 @@ describe('DocumentsService', () => {
         filename: 'test.pdf',
       };
 
+      // DocumentsService may call list() - expect and flush if so
       service.upload(file).subscribe((result) => {
         expect(result.ok).toBe(true);
         if (result.ok) {
@@ -136,10 +137,13 @@ describe('DocumentsService', () => {
         done();
       });
 
-      const req = httpMock.expectOne(`${service['apiUrl']}/upload`);
-      expect(req.request.method).toBe('POST');
-      expect(req.request.body).toBeInstanceOf(FormData);
-      req.flush(mockResponse);
+      const uploadReq = httpMock.expectOne(`${service['apiUrl']}/upload`);
+      expect(uploadReq.request.method).toBe('POST');
+      expect(uploadReq.request.body).toBeInstanceOf(FormData);
+      uploadReq.flush(mockResponse);
+      // Flush any list() request that may have been triggered
+      const listReqs = httpMock.match(`${service['apiUrl']}`);
+      listReqs.forEach((r) => r.flush({ documents: [] }));
     });
 
     it('should handle upload error', (done) => {
@@ -201,16 +205,16 @@ describe('DocumentsService', () => {
         return Promise.resolve({ done: true, value: undefined });
       });
 
-      const mockResponse = {
+      const mockResponse: Partial<Response> = {
         ok: true,
         body: {
           getReader: () => mockReader,
-        },
-      } as any;
+        } as unknown as ReadableStream<Uint8Array>,
+      };
 
-      mockFetch.mockResolvedValueOnce(mockResponse);
+      mockFetch.mockResolvedValueOnce(mockResponse as Response);
 
-      const progressEvents: any[] = [];
+      const progressEvents: unknown[] = [];
       service.uploadWithProgress(file).subscribe({
         next: (event) => {
           progressEvents.push(event);
@@ -218,9 +222,12 @@ describe('DocumentsService', () => {
         complete: () => {
           expect(progressEvents.length).toBeGreaterThan(0);
           const doneEvent = progressEvents.find(
-            (e) => 'ok' in e && e.ok === true
+            (e: unknown) => typeof e === 'object' && e !== null && 'ok' in e && (e as { ok: boolean }).ok === true
           );
           expect(doneEvent).toBeTruthy();
+          // Flush any list() request
+          const listReqs = httpMock.match(`${service['apiUrl']}`);
+          listReqs.forEach((r) => r.flush({ documents: [] }));
           done();
         },
       });
@@ -235,7 +242,7 @@ describe('DocumentsService', () => {
         ok: false,
         statusText: 'Bad Request',
         json: async () => ({ error: 'File too large' }),
-      } as any);
+      } as Response);
 
       service.uploadWithProgress(file).subscribe({
         next: (event) => {

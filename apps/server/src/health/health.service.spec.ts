@@ -122,7 +122,7 @@ describe('HealthService', () => {
       const mockLLM = {
         invoke: jest.fn().mockResolvedValue('response'),
       };
-      (ChatGroq as jest.Mock).mockImplementation(() => mockLLM);
+      (ChatGroq as unknown as jest.Mock).mockImplementation(() => mockLLM);
 
       const result = await service.checkGroq();
       expect(result.available).toBe(true);
@@ -175,7 +175,7 @@ describe('HealthService', () => {
       const mockLLM = {
         invoke: jest.fn().mockResolvedValue('response'),
       };
-      (ChatGroq as jest.Mock).mockImplementation(() => mockLLM);
+      (ChatGroq as unknown as jest.Mock).mockImplementation(() => mockLLM);
 
       const mockEmbeddings = {
         embedQuery: jest.fn().mockResolvedValue([0.1, 0.2, 0.3]),

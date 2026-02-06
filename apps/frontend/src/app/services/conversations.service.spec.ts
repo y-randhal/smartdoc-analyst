@@ -96,7 +96,7 @@ describe('ConversationsService', () => {
           updatedAt: new Date(),
         },
       ];
-      (service as any).listSubject.next(initialList);
+      (service as unknown as { listSubject: { next: (l: unknown[]) => void } }).listSubject.next(initialList);
 
       service.delete('conv-1').subscribe((response) => {
         expect(response.deleted).toBe(true);

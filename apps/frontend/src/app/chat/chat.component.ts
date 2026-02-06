@@ -294,7 +294,10 @@ export class ChatComponent implements AfterViewChecked, OnInit {
             this.documentsExpanded = true;
             setTimeout(() => (this.uploadSuccess = ''), 4000);
           } else {
-            this.uploadError = (event as any).error ?? (event as any).message ?? 'Unknown upload error.';
+            this.uploadError =
+              (event as { error?: string; message?: string }).error ??
+              (event as { error?: string; message?: string }).message ??
+              'Unknown upload error.';
           }
         }
       },

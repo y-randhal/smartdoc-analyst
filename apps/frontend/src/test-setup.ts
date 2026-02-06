@@ -1,4 +1,6 @@
-/// <reference types="jest" />
+import { setupZoneTestEnv } from 'jest-preset-angular/setup-env/zone';
+
+setupZoneTestEnv();
 
 // Mock global crypto for tests
 let uuidCounter = 0;
@@ -17,7 +19,7 @@ if (typeof TextDecoder === 'undefined') {
     decode(input?: Uint8Array): string {
       return Buffer.from(input || []).toString('utf-8');
     }
-  } as any;
+  } as unknown as typeof global.TextDecoder;
 }
 
 if (typeof TextEncoder === 'undefined') {
@@ -25,5 +27,5 @@ if (typeof TextEncoder === 'undefined') {
     encode(input: string): Uint8Array {
       return new Uint8Array(Buffer.from(input, 'utf-8'));
     }
-  } as any;
+  } as unknown as typeof global.TextEncoder;
 }

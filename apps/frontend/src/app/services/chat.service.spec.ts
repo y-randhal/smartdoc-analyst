@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { firstValueFrom } from 'rxjs';
 import { ChatService } from './chat.service';
 import { ConversationsService } from './conversations.service';
 import type { ChatMessage } from '@smartdoc-analyst/api-interfaces';
@@ -18,6 +19,19 @@ describe('ChatService', () => {
     conversationsService = TestBed.inject(ConversationsService);
     mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
     mockFetch.mockClear();
+    // Default mock: return empty stream so sendMessage doesn't fail
+    mockFetch.mockImplementation(
+      () =>
+        Promise.resolve({
+          ok: true,
+          body: {
+            getReader: () => ({
+              read: () => Promise.resolve({ done: true, value: undefined }),
+              releaseLock: jest.fn(),
+            }),
+          },
+        }) as unknown as Promise<Response>
+    );
   });
 
   it('should be created', () => {
@@ -43,12 +57,10 @@ describe('ChatService', () => {
   });
 
   describe('clearError', () => {
-    it('should clear error state', (done) => {
-      service.error$.subscribe((error) => {
-        expect(error).toBeNull();
-        done();
-      });
+    it('should clear error state', async () => {
       service.clearError();
+      const error = await firstValueFrom(service.error$);
+      expect(error).toBeNull();
     });
   });
 
@@ -73,7 +85,7 @@ describe('ChatService', () => {
           timestamp: new Date(),
         },
       ];
-      (service as any).messagesSubject.next(messages);
+      (service as unknown as { messagesSubject: { next: (m: ChatMessage[]) => void } }).messagesSubject.next(messages);
       const initialLength = service.getMessages().length;
 
       service.removeLastAssistantMessage();
@@ -135,9 +147,11 @@ describe('ChatService', () => {
       // Wait for async operations
       await new Promise((resolve) => setTimeout(resolve, 100));
 
+      let hasError = false;
       service.error$.subscribe((error) => {
-        expect(error).toBeTruthy();
+        if (error) hasError = true;
       });
+      expect(hasError).toBe(true);
     });
 
     it('should handle stream response with content chunks', async () => {
@@ -164,14 +178,14 @@ describe('ChatService', () => {
         return Promise.resolve({ done: true, value: undefined });
       });
 
-      const mockResponse = {
+      const mockResponse: Partial<Response> = {
         ok: true,
         body: {
           getReader: () => mockReader,
-        },
-      } as any;
+        } as unknown as ReadableStream<Uint8Array>,
+      };
 
-      mockFetch.mockResolvedValueOnce(mockResponse);
+      mockFetch.mockResolvedValueOnce(mockResponse as Response);
 
       service.sendMessage('test').subscribe();
 
@@ -195,14 +209,14 @@ describe('ChatService', () => {
       });
       mockReader.read.mockResolvedValueOnce({ done: true, value: undefined });
 
-      const mockResponse = {
+      const mockResponse: Partial<Response> = {
         ok: true,
         body: {
           getReader: () => mockReader,
-        },
-      } as any;
+        } as unknown as ReadableStream<Uint8Array>,
+      };
 
-      mockFetch.mockResolvedValueOnce(mockResponse);
+      mockFetch.mockResolvedValueOnce(mockResponse as Response);
       const refreshSpy = jest.spyOn(conversationsService, 'refreshList');
 
       service.sendMessage('test').subscribe();

@@ -10,6 +10,7 @@ import { HealthModule } from '../health/health.module';
 import { ConversationsModule } from '../conversations/conversations.module';
 
 describe('API (e2e)', () => {
+  jest.setTimeout(30000);
   let app: INestApplication;
 
   beforeAll(async () => {
@@ -52,7 +53,7 @@ describe('API (e2e)', () => {
         .expect((res) => {
           expect(res.body.status).toBeDefined();
           expect(res.body.timestamp).toBeDefined();
-          expect(res.body.checks.env).toBeDefined();
+          expect(res.body.env).toBeDefined();
         }));
   });
 

@@ -1,36 +1,39 @@
+import { TestBed } from '@angular/core/testing';
 import { HttpRequest, HttpErrorResponse, HttpEvent } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { errorInterceptor } from './error.interceptor';
 import { Logger } from '../services/logger.service';
 
-// Mock Logger
-jest.mock('../services/logger.service', () => ({
-  Logger: jest.fn().mockImplementation(() => ({
-    log: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    info: jest.fn(),
-  })),
-}));
+const mockLogger = {
+  log: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  info: jest.fn(),
+};
 
 describe('ErrorInterceptor', () => {
   let nextFn: jest.Mock;
 
   beforeEach(() => {
     nextFn = jest.fn();
+    TestBed.configureTestingModule({
+      providers: [{ provide: Logger, useValue: mockLogger }],
+    });
   });
 
   it('should pass through successful requests', (done) => {
     const request = new HttpRequest('GET', '/api/test');
-    const response = { status: 200 } as HttpEvent<any>;
+    const response = { status: 200 } as HttpEvent<unknown>;
 
     nextFn.mockReturnValue(of(response));
 
-    errorInterceptor(request, nextFn).subscribe({
-      next: (event) => {
-        expect(event).toBe(response);
-        done();
-      },
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(request, nextFn).subscribe({
+        next: (event) => {
+          expect(event).toBe(response);
+          done();
+        },
+      });
     });
   });
 
@@ -44,11 +47,13 @@ describe('ErrorInterceptor', () => {
 
     nextFn.mockReturnValue(throwError(() => error));
 
-    errorInterceptor(request, nextFn).subscribe({
-      error: (err) => {
-        expect(err.message).toContain('Invalid input');
-        done();
-      },
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(request, nextFn).subscribe({
+        error: (err: { message: string }) => {
+          expect(err.message).toContain('Invalid input');
+          done();
+        },
+      });
     });
   });
 
@@ -61,11 +66,13 @@ describe('ErrorInterceptor', () => {
 
     nextFn.mockReturnValue(throwError(() => error));
 
-    errorInterceptor(request, nextFn).subscribe({
-      error: (err) => {
-        expect(err.message).toContain('Server error');
-        done();
-      },
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(request, nextFn).subscribe({
+        error: (err: { message: string }) => {
+          expect(err.message).toContain('Server error');
+          done();
+        },
+      });
     });
   });
 
@@ -78,11 +85,13 @@ describe('ErrorInterceptor', () => {
 
     nextFn.mockReturnValue(throwError(() => error));
 
-    errorInterceptor(request, nextFn).subscribe({
-      error: (err) => {
-        expect(err.message).toContain('Unable to connect');
-        done();
-      },
+    TestBed.runInInjectionContext(() => {
+      errorInterceptor(request, nextFn).subscribe({
+        error: (err: { message: string }) => {
+          expect(err.message).toContain('Unable to connect');
+          done();
+        },
+      });
     });
   });
 });

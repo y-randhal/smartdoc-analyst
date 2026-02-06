@@ -76,7 +76,9 @@ export class ConversationsSidebarComponent implements OnInit {
         }));
         this.chatService.loadConversation(messages, id);
       },
-      error: () => {},
+      error: (err: unknown) => {
+        console.error(err);
+      },
     });
   }
 

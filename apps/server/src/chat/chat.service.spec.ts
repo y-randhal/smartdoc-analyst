@@ -15,7 +15,6 @@ jest.mock('@smartdoc-analyst/ai-engine', () => ({
 
 describe('ChatService', () => {
   let service: ChatService;
-  let conversationsService: ConversationsService;
 
   const mockConversationsService = {
     get: jest.fn(),
@@ -57,7 +56,6 @@ describe('ChatService', () => {
     }).compile();
 
     service = module.get<ChatService>(ChatService);
-    conversationsService = module.get<ConversationsService>(ConversationsService);
   });
 
   it('should be defined', () => {

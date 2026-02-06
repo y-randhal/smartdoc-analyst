@@ -136,7 +136,7 @@ describe('ChatComponent', () => {
           files: [file],
           value: 'test.pdf',
         },
-      } as any;
+      } as unknown as Event & { target: { files: File[]; value: string } };
 
       (documentsService.uploadWithProgress as jest.Mock).mockReturnValue(
         of({ ok: true, data: { documentId: 'doc-1', chunks: 5, filename: 'test.pdf' } })
@@ -158,7 +158,7 @@ describe('ChatComponent', () => {
           files: [file],
           value: 'test.pdf',
         },
-      } as any;
+      } as unknown as Event & { target: { files: File[]; value: string } };
 
       (documentsService.uploadWithProgress as jest.Mock).mockReturnValue(
         of({ ok: false, error: 'Upload failed' })
@@ -178,7 +178,7 @@ describe('ChatComponent', () => {
         target: {
           files: null,
         },
-      } as any;
+      } as unknown as Event & { target: { files: File[] | null } };
 
       component.onFileSelected(event);
       expect(documentsService.uploadWithProgress).not.toHaveBeenCalled();

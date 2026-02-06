@@ -1,21 +1,11 @@
 module.exports = {
   displayName: 'frontend',
-  preset: '../../jest.preset.js',
+  preset: 'jest-preset-angular',
   coverageDirectory: '../../coverage/apps/frontend',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
   testMatch: ['**/*.spec.ts'],
-  testEnvironment: 'jsdom',
-  transform: {
-    '^.+\\.(ts|mjs|js|html)$': [
-      'ts-jest',
-      {
-        tsconfig: '<rootDir>/tsconfig.spec.json',
-        isolatedModules: true,
-      },
-    ],
-  },
   transformIgnorePatterns: [
-    'node_modules/(?!.*\\.mjs$|@angular|@ngrx|rxjs)',
+    'node_modules/(?!.*\\.mjs$|@angular/common/locales/.*\\.js$|marked/)',
   ],
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -27,10 +17,5 @@ module.exports = {
   ],
   moduleNameMapper: {
     '^@smartdoc-analyst/api-interfaces$': '<rootDir>/../../libs/api-interfaces/src/index.ts',
-  },
-  globals: {
-    'ts-jest': {
-      tsconfig: '<rootDir>/tsconfig.spec.json',
-    },
   },
 };

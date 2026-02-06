@@ -1,2 +1,4 @@
 import { TextEncoder, TextDecoder } from 'util';
-Object.assign(global, { TextDecoder, TextEncoder });
+import { ReadableStream } from 'stream/web';
+
+Object.assign(global, { TextDecoder, TextEncoder, ReadableStream });
