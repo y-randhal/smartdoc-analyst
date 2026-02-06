@@ -58,8 +58,31 @@ npm run serve:frontend
 | `npm run lint` | Lint all projects |
 | `nx run server:validate-env` | Validate that all required .env keys are set |
 | `nx run server:test` | Run server unit and e2e tests (29 tests) |
+| `nx run frontend:test` | Run frontend unit tests (components, services, pipes) |
+
+## API Documentation
+
+Interactive API documentation is available via Swagger/OpenAPI:
+
+- **Local:** `http://localhost:3000/api/docs` (when server is running)
+- **Features:**
+  - Try out endpoints directly from the browser
+  - View request/response schemas
+  - See example requests and responses
+  - All endpoints documented with descriptions and examples
+
+## CI/CD
+
+GitHub Actions runs on every push and pull request to `main`/`master`:
+
+- **Tests**: Server unit + e2e + Frontend unit tests (mock API keys in CI)
+- **Build**: All apps and libs
+
+See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
 **Health check:** `GET /health` (no `/api` prefix) returns `{ status, timestamp, checks }` for monitoring.
+
+**API Documentation:** Swagger/OpenAPI docs available at `http://localhost:3000/api/docs` when the server is running.
 
 ## Architecture
 
