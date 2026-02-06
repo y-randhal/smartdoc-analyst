@@ -1,0 +1,10 @@
+{
+  "name": "@smartdoc-analyst/ai-engine",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./src/index.js",
+  "types": "./src/index.d.ts",
+  "peerDependencies": {
+    "@smartdoc-analyst/api-interfaces": "*"
+  }
+}

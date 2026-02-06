@@ -1,0 +1,21 @@
+{
+  "name": "ai-engine",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/ai-engine/src",
+  "projectType": "library",
+  "tags": ["scope:shared", "type:ai"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/ai-engine",
+        "main": "libs/ai-engine/src/index.ts",
+        "tsConfig": "libs/ai-engine/tsconfig.json"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

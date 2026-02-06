@@ -1,0 +1,23 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": true,
+    "declaration": false,
+    "moduleResolution": "node",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@smartdoc-analyst/api-interfaces": ["libs/api-interfaces/src/index.ts"],
+      "@smartdoc-analyst/ai-engine": ["libs/ai-engine/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}

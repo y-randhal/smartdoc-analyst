@@ -1,0 +1,46 @@
+{
+  "name": "server",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/server/src",
+  "projectType": "application",
+  "tags": ["scope:server", "type:app"],
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/server",
+        "main": "apps/server/src/main.ts",
+        "tsConfig": "apps/server/tsconfig.app.json",
+        "assets": ["apps/server/src/assets"]
+      },
+      "configurations": {
+        "production": {
+          "sourceMap": false
+        }
+      }
+    },
+    "validate-env": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "node scripts/validate-env.js",
+        "cwd": "{workspaceRoot}"
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "dependsOn": ["validate-env"],
+      "options": {
+        "buildTarget": "server:build"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "server:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}
