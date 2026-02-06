@@ -26,6 +26,8 @@ export class MarkdownPipe implements PipeTransform {
     const sanitized = this.sanitizer.sanitize(1, html); // SecurityContext.HTML = 1
 
     // Return as SafeHtml - Angular trusts this content because it was sanitized
-    return this.sanitizer.bypassSecurityTrustHtml(sanitized);
+    // Fixed: sanitize() can return null, so fallback to empty string if so
+    return this.sanitizer.bypassSecurityTrustHtml(sanitized ?? '');
+
   }
 }

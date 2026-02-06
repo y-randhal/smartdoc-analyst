@@ -1,5 +1,4 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import type {
@@ -27,8 +26,6 @@ export class ChatService {
   readonly loading$ = this.loadingSubject.asObservable();
   readonly error$ = this.errorSubject.asObservable();
   readonly conversationId$ = this.conversationIdSubject.asObservable();
-
-  constructor(private readonly http: HttpClient) {}
 
   getConversationId(): string | null {
     return this.conversationIdSubject.value;

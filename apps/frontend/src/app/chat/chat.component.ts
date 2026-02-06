@@ -10,7 +10,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatService } from '../services/chat.service';
-import { DocumentsService, type UploadResult, type UploadProgress } from '../services/documents.service';
+import { DocumentsService, type UploadProgress } from '../services/documents.service';
 import { MarkdownPipe } from '../pipes/markdown.pipe';
 
 @Component({
@@ -196,7 +196,6 @@ import { MarkdownPipe } from '../pipes/markdown.pipe';
   `,
 })
 export class ChatComponent implements AfterViewChecked, OnInit {
-  @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
   @ViewChild('scrollAnchor') private scrollAnchor?: ElementRef<HTMLDivElement>;
 
   readonly chatService = inject(ChatService);

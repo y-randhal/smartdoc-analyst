@@ -1,4 +1,4 @@
-import { HttpInterceptorFn, HttpEvent } from '@angular/common/http';
+import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { finalize } from 'rxjs/operators';
 import { LoadingService } from '../services/loading.service';
