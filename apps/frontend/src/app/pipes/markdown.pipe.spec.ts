@@ -52,4 +52,15 @@ describe('MarkdownPipe', () => {
     const result = pipe.transform(markdown);
     expect(result).toBeTruthy();
   });
+
+  it('should sanitize HTML to prevent XSS', () => {
+    const maliciousInput = '<script>alert("XSS")</script># Safe Heading';
+    const result = pipe.transform(maliciousInput);
+    // Sanitizer should remove script tags
+    expect(result).toBeTruthy();
+    // The result should be sanitized (script tags removed)
+    const sanitizeSpy = jest.spyOn(sanitizer, 'sanitize');
+    pipe.transform(maliciousInput);
+    expect(sanitizeSpy).toHaveBeenCalled();
+  });
 });

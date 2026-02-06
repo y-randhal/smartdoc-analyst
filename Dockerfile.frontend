@@ -1,0 +1,44 @@
+# Multi-stage build for Angular frontend
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+COPY nx.json ./
+COPY tsconfig.base.json ./
+
+# Copy project.json files for dependency resolution
+COPY apps/frontend/project.json ./apps/frontend/
+COPY libs/api-interfaces/project.json ./libs/api-interfaces/
+
+# Install dependencies
+RUN npm ci --legacy-peer-deps
+
+# Build the application
+FROM base AS builder
+WORKDIR /app
+
+# Copy dependencies
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
+COPY . .
+
+# Build the frontend
+RUN npx nx build frontend --configuration=production
+
+# Production image with nginx
+FROM nginx:alpine AS runner
+
+# Copy built files
+COPY --from=builder /app/dist/apps/frontend/browser /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

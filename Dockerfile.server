@@ -1,0 +1,62 @@
+# Multi-stage build for NestJS server
+FROM node:20-alpine AS base
+
+# Install dependencies only when needed
+FROM base AS deps
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json ./
+COPY nx.json ./
+COPY tsconfig.base.json ./
+
+# Copy project.json files for dependency resolution
+COPY apps/server/project.json ./apps/server/
+COPY libs/ai-engine/project.json ./libs/ai-engine/
+COPY libs/api-interfaces/project.json ./libs/api-interfaces/
+
+# Install dependencies
+RUN npm ci --legacy-peer-deps
+
+# Build the application
+FROM base AS builder
+WORKDIR /app
+
+# Copy dependencies
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
+COPY . .
+
+# Build the server
+RUN npx nx build server --configuration=production
+
+# Production image
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
+
+# Copy built application
+COPY --from=builder --chown=nestjs:nodejs /app/dist/apps/server ./dist
+COPY --from=builder --chown=nestjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nestjs:nodejs /app/package.json ./package.json
+
+# Create data directory
+RUN mkdir -p /app/data && chown -R nestjs:nodejs /app/data
+
+USER nestjs
+
+EXPOSE 3000
+
+ENV PORT=3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+CMD ["node", "dist/main.js"]

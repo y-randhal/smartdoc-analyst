@@ -1,0 +1,65 @@
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Build outputs
+dist
+.angular
+coverage
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+
+# Testing
+*.spec.ts
+*.test.ts
+*.e2e-spec.ts
+jest.config.*
+.nyc_output
+
+# Logs
+logs
+*.log
+debug.log
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Documentation
+README.md
+*.md
+!CHANGELOG.md
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Data (will be mounted as volume)
+data

@@ -38,6 +38,8 @@ Required:
 
 ### 3. Run
 
+**Option A: Local Development**
+
 **API Server:**
 ```bash
 npm run serve:server
@@ -47,6 +49,30 @@ npm run serve:server
 ```bash
 npm run serve:frontend
 ```
+
+**Option B: Docker (Recommended for Production)**
+
+**Production:**
+```bash
+# Build and start all services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+**Development (with hot reload):**
+```bash
+docker-compose -f docker-compose.dev.yml up
+```
+
+The application will be available at:
+- **Frontend:** http://localhost (or http://localhost:4200 in dev mode)
+- **API:** http://localhost:3000
+- **API Docs:** http://localhost:3000/api/docs
 
 ## Commands
 
@@ -80,9 +106,56 @@ GitHub Actions runs on every push and pull request to `main`/`master`:
 
 See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
-**Health check:** `GET /health` (no `/api` prefix) returns `{ status, timestamp, checks }` for monitoring.
+**Health check:** 
+- `GET /health` - Quick check (environment variables only)
+- `GET /health?checkServices=true` - Full check with connectivity tests to Pinecone, Groq, and Hugging Face
+- Returns `{ status, timestamp, env, services? }` for monitoring
 
 **API Documentation:** Swagger/OpenAPI docs available at `http://localhost:3000/api/docs` when the server is running.
+
+## Docker
+
+### Production Build
+
+The project includes Dockerfiles for both server and frontend:
+
+- **Server:** Multi-stage build with Node.js 20 Alpine
+- **Frontend:** Angular build served with Nginx
+- **Health checks:** Built-in health monitoring
+- **Data persistence:** Volume mounts for `data/` directory
+
+### Docker Commands
+
+```bash
+# Build images
+docker-compose build
+
+# Start services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f server
+docker-compose logs -f frontend
+
+# Stop services
+docker-compose down
+
+# Rebuild and restart
+docker-compose up -d --build
+```
+
+### Environment Variables in Docker
+
+Create a `.env` file in the project root (or set environment variables):
+
+```env
+GROQ_API_KEY=your_key_here
+PINECONE_API_KEY=your_key_here
+PINECONE_INDEX_NAME=smartdoc-index
+HUGGINGFACE_API_KEY=your_key_here
+```
+
+Docker Compose will automatically load these variables.
 
 ## Architecture
 
@@ -95,3 +168,4 @@ See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 - **DocumentsModule**: Upload PDF/TXT/MD files; parses, chunks, embeds, and upserts to Pinecone. Registry persisted to `data/documents.json`. `POST /api/documents/upload-stream` streams progress (parsing → chunking → indexing)
 - **ConversationsModule**: Persists conversations to `data/conversations.json` (survives server restart)
 - **ChatService** (frontend): RxJS-based reactive stream for chat messages
+- **Security**: Markdown sanitization prevents XSS attacks in AI-generated content
