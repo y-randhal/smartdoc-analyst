@@ -5,6 +5,7 @@ import {
   ElementRef,
   AfterViewChecked,
   ChangeDetectorRef,
+  OnInit,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -43,6 +44,31 @@ import { MarkdownPipe } from '../pipes/markdown.pipe';
         @if (uploadSuccess) {
           <p class="mt-2 text-sm text-emerald-400">{{ uploadSuccess }}</p>
         }
+        <!-- Indexed documents -->
+        <details class="mt-3" [open]="documentsExpanded">
+          <summary class="text-sm text-slate-400 cursor-pointer hover:text-slate-300">
+            Indexed documents ({{ (documentsService.documents$ | async)?.length ?? 0 }})
+          </summary>
+          <div class="mt-2 space-y-1 max-h-32 overflow-y-auto">
+            @if ((documentsService.documents$ | async)?.length === 0) {
+              <p class="text-xs text-slate-500">No documents indexed yet</p>
+            } @else {
+              @for (doc of (documentsService.documents$ | async) ?? []; track doc.id) {
+                <div class="flex items-center justify-between gap-2 py-1 px-2 rounded bg-slate-800/50 text-sm">
+                  <span class="truncate text-slate-300">{{ doc.filename }}</span>
+                  <span class="text-xs text-slate-500 shrink-0">{{ doc.chunks }} chunks</span>
+                  <button
+                    (click)="deleteDocument(doc.id)"
+                    class="shrink-0 p-1 text-slate-500 hover:text-red-400 transition-colors"
+                    title="Remove from index"
+                  >
+                    ×
+                  </button>
+                </div>
+              }
+            }
+          </div>
+        </details>
       </div>
 
       <!-- Messages area -->
@@ -163,7 +189,7 @@ import { MarkdownPipe } from '../pipes/markdown.pipe';
     </div>
   `,
 })
-export class ChatComponent implements AfterViewChecked {
+export class ChatComponent implements AfterViewChecked, OnInit {
   @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
   @ViewChild('scrollAnchor') private scrollAnchor?: ElementRef<HTMLDivElement>;
 
@@ -175,7 +201,12 @@ export class ChatComponent implements AfterViewChecked {
   uploading = false;
   uploadError = '';
   uploadSuccess = '';
+  documentsExpanded = false;
   private lastMessageCount = 0;
+
+  ngOnInit(): void {
+    this.documentsService.list().subscribe();
+  }
   private lastContentLength = 0;
 
   ngAfterViewChecked(): void {
@@ -201,6 +232,10 @@ export class ChatComponent implements AfterViewChecked {
     this.chatService.clearError();
     this.chatService.sendMessage(p).subscribe();
     this.prompt = '';
+  }
+
+  deleteDocument(id: string): void {
+    this.documentsService.delete(id).subscribe();
   }
 
   retryLastMessage(): void {
@@ -230,6 +265,7 @@ export class ChatComponent implements AfterViewChecked {
         input.value = '';
         if (result.ok) {
           this.uploadSuccess = `"${result.data.filename}" indexed (${result.data.chunks} chunks)`;
+          this.documentsExpanded = true;
           setTimeout(() => (this.uploadSuccess = ''), 4000);
         } else {
           this.uploadError = (result as any).error ?? 'Unknown upload error.';

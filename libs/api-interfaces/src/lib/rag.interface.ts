@@ -20,6 +20,18 @@ export interface RAGConfig {
 }
 
 export interface IngestionResponse {
+  documentId: string;
   chunks: number;
   filename: string;
+}
+
+export interface IndexedDocument {
+  id: string;
+  filename: string;
+  chunks: number;
+  uploadedAt: string;
+}
+
+export interface DocumentListResponse {
+  documents: IndexedDocument[];
 }

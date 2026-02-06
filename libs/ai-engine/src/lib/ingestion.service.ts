@@ -15,8 +15,10 @@ const SUPPORTED_MIME_TYPES = ['application/pdf', 'text/plain', 'text/markdown'];
 const MAX_FILE_SIZE_MB = 10;
 
 export interface IngestionResult {
+  documentId: string;
   chunks: number;
   filename: string;
+  chunkIds: string[];
 }
 
 export class IngestionService {
@@ -129,8 +131,19 @@ export class IngestionService {
     await store.addDocuments(chunks, { ids });
 
     return {
+      documentId: docId,
       chunks: chunks.length,
       filename,
+      chunkIds: ids,
     };
+  }
+
+  /**
+   * Delete a document's chunks from Pinecone by their IDs
+   */
+  async deleteDocument(chunkIds: string[]): Promise<void> {
+    if (chunkIds.length === 0) return;
+    const store = await this.getVectorStore();
+    await store.delete({ ids: chunkIds });
   }
 }

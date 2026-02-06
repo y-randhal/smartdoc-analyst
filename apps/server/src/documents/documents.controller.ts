@@ -1,6 +1,10 @@
 import {
   BadRequestException,
   Controller,
+  Delete,
+  Get,
+  NotFoundException,
+  Param,
   Post,
   UploadedFile,
   UseInterceptors,
@@ -21,6 +25,20 @@ interface UploadedFileShape {
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
+
+  @Get()
+  list() {
+    return this.documentsService.listDocuments();
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    const deleted = await this.documentsService.deleteDocument(id);
+    if (!deleted) {
+      throw new NotFoundException('Document not found');
+    }
+    return { deleted: true };
+  }
 
   @Post('upload')
   @UseInterceptors(
