@@ -1,9 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { Logger } from 'nestjs-pino';
 import { AppModule } from './app/app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
+  app.useLogger(app.get(Logger));
 
   app.setGlobalPrefix('api', { exclude: ['/health'] });
   app.enableCors({
@@ -21,7 +23,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
-  console.log(`🚀 SmartDoc Analyst API running on: http://localhost:${port}/api`);
+  app.get(Logger).log(`SmartDoc Analyst API running on: http://localhost:${port}/api`);
 }
 
 bootstrap();

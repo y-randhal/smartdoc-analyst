@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
@@ -17,6 +17,7 @@ interface StoredConversation {
 
 @Injectable()
 export class ConversationsService implements OnModuleInit {
+  private readonly logger = new Logger(ConversationsService.name);
   private readonly conversations = new Map<string, Conversation>();
   private storagePath: string;
 
@@ -68,7 +69,7 @@ export class ConversationsService implements OnModuleInit {
       );
       await writeFile(this.storagePath, JSON.stringify(stored, null, 2), 'utf-8');
     } catch (err) {
-      console.error('Failed to save conversations:', err);
+      this.logger.error('Failed to save conversations', err instanceof Error ? err.stack : String(err));
     }
   }
 

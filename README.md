@@ -57,7 +57,7 @@ npm run serve:frontend
 | `npm run build` | Build all apps and libs |
 | `npm run lint` | Lint all projects |
 | `nx run server:validate-env` | Validate that all required .env keys are set |
-| `nx run server:test` | Run server unit and e2e tests |
+| `nx run server:test` | Run server unit and e2e tests (29 tests) |
 
 **Health check:** `GET /health` (no `/api` prefix) returns `{ status, timestamp, checks }` for monitoring.
 
@@ -67,6 +67,8 @@ npm run serve:frontend
 - **api-interfaces**: Shared contracts between frontend and backend
 - **ai-engine**: LangChain.js orchestration (Groq LLM, Pinecone vector store, Hugging Face embeddings)
 - **ChatModule**: NestJS module that receives prompts, queries Pinecone, returns LLM responses. Includes conversation history in RAG prompt for contextual answers
+- **Rate limiting**: 60 requests/minute per IP (configurable via `THROTTLE_TTL`, `THROTTLE_LIMIT`). `/health` excluded
+- **Logging**: Pino structured JSON logs. Use `node dist/apps/server/main.js | npx pino-pretty` for readable dev output
 - **DocumentsModule**: Upload PDF/TXT/MD files; parses, chunks, embeds, and upserts to Pinecone. Registry persisted to `data/documents.json`
 - **ConversationsModule**: Persists conversations to `data/conversations.json` (survives server restart)
 - **ChatService** (frontend): RxJS-based reactive stream for chat messages

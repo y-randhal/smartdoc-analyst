@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
@@ -25,6 +25,7 @@ interface StoredDocumentEntry {
 
 @Injectable()
 export class DocumentsService implements OnModuleInit {
+  private readonly logger = new Logger(DocumentsService.name);
   private ingestionService: IngestionService | null = null;
   private readonly registry = new Map<string, DocumentEntry>();
   private storagePath: string;
@@ -70,7 +71,7 @@ export class DocumentsService implements OnModuleInit {
       );
       await writeFile(this.storagePath, JSON.stringify(stored, null, 2), 'utf-8');
     } catch (err) {
-      console.error('Failed to save documents registry:', err);
+      this.logger.error('Failed to save documents registry', err instanceof Error ? err.stack : String(err));
     }
   }
 
