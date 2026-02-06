@@ -1,5 +1,4 @@
 import { ApiProperty } from '@nestjs/swagger';
-import type { DocumentSource } from '@smartdoc-analyst/api-interfaces';
 
 export class DocumentSourceDto {
   @ApiProperty({ description: 'Unique identifier for the document chunk' })

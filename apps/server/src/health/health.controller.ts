@@ -1,8 +1,7 @@
 import { Controller, Get, HttpStatus, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiProperty, ApiQuery } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
 import { SkipThrottle } from '@nestjs/throttler';
-import { HealthService, ServiceHealth } from './health.service';
+import { HealthService } from './health.service';
 
 export class ServiceHealthDto {
   @ApiProperty({ description: 'Whether the service is available' })
@@ -76,10 +75,7 @@ export class HealthResponseDto {
 @Controller('health')
 @SkipThrottle()
 export class HealthController {
-  constructor(
-    private readonly config: ConfigService,
-    private readonly healthService: HealthService
-  ) {}
+  constructor(private readonly healthService: HealthService) {}
 
   @Get()
   @ApiOperation({

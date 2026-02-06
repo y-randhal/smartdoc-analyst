@@ -2,7 +2,7 @@ import { Body, Controller, Post, Res, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { Response } from 'express';
 import { ChatService } from './chat.service';
-import { ChatRequestDto, ChatResponseDto, ChatStreamEventDto } from './dto';
+import { ChatRequestDto, ChatResponseDto } from './dto';
 
 @ApiTags('chat')
 @Controller('chat')
