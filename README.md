@@ -10,6 +10,8 @@
 
 RAG (Retrieval Augmented Generation) application for document analysis. Upload PDFs, ask questions, get AI-powered answers with source citations. Built with NX monorepo, LangChain, Groq, and Pinecone.
 
+![SmartDoc AI Screenshot](./assets/smartdoc-ai-screenshot.png)
+
 ---
 
 ## ✨ Features
@@ -20,27 +22,27 @@ RAG (Retrieval Augmented Generation) application for document analysis. Upload P
 | 📐 Embeddings | Hugging Face (all-MiniLM-L6-v2) |
 | 📦 Vector DB | Pinecone |
 | 🔗 RAG Pipeline | LangChain.js |
-| 📄 Documentos | PDF, TXT, MD |
-| 💬 Chat contextual | Histórico no prompt |
-| ⚡ Streaming | Respostas em tempo real |
+| 📄 Documents | PDF, TXT, MD |
+| 💬 Contextual chat | History in prompt |
+| ⚡ Streaming | Real-time responses |
 
 ---
 
-## 🔄 Fluxo RAG
+## 🔄 RAG Flow
 
 ```mermaid
 flowchart TB
-    subgraph Ingestão
+    subgraph Ingestion
         A[📄 PDF/TXT/MD] --> B[RecursiveCharacterTextSplitter]
         B --> C[HuggingFace Embeddings]
         C --> D[(Pinecone)]
     end
     subgraph Query
-        Q[❓ Pergunta] --> C
+        Q[❓ Question] --> C
         D --> E[Similarity Search]
-        E --> F[Contexto Top-K]
+        E --> F[Top-K Context]
         F --> G[Groq LLM]
-        G --> R[📝 Resposta + Sources]
+        G --> R[📝 Response + Sources]
     end
 ```
 

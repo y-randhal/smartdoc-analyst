@@ -21,6 +21,20 @@ export class ServiceHealthDto {
   error?: string;
 }
 
+export class ServicesHealthDto {
+  @ApiProperty({ type: () => ServiceHealthDto })
+  pinecone!: ServiceHealthDto;
+
+  @ApiProperty({ type: () => ServiceHealthDto })
+  groq!: ServiceHealthDto;
+
+  @ApiProperty({ type: () => ServiceHealthDto })
+  huggingface!: ServiceHealthDto;
+
+  @ApiProperty()
+  allHealthy!: boolean;
+}
+
 export class HealthResponseDto {
   @ApiProperty({
     description: 'Service health status',
@@ -52,21 +66,10 @@ export class HealthResponseDto {
 
   @ApiProperty({
     description: 'Service connectivity checks',
-    type: 'object',
-    properties: {
-      pinecone: { $ref: '#/components/schemas/ServiceHealthDto' },
-      groq: { $ref: '#/components/schemas/ServiceHealthDto' },
-      huggingface: { $ref: '#/components/schemas/ServiceHealthDto' },
-      allHealthy: { type: 'boolean' },
-    },
+    type: () => ServicesHealthDto,
     required: false,
   })
-  services?: {
-    pinecone: ServiceHealthDto;
-    groq: ServiceHealthDto;
-    huggingface: ServiceHealthDto;
-    allHealthy: boolean;
-  };
+  services?: ServicesHealthDto;
 }
 
 @ApiTags('health')

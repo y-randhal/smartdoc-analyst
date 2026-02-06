@@ -6,9 +6,12 @@
     "outDir": "../../dist/out-tsc",
     "types": ["node"],
     "baseUrl": "../..",
+    "importHelpers": false,
     "paths": {
       "@smartdoc-analyst/api-interfaces": ["libs/api-interfaces/src/index.ts"],
-      "@smartdoc-analyst/ai-engine": ["libs/ai-engine/src/index.ts"]
+      "@smartdoc-analyst/ai-engine": ["libs/ai-engine/src/index.ts"],
+      "nestjs-pino": ["node_modules/nestjs-pino"],
+      "tslib": ["node_modules/tslib"]
     }
   },
   "include": ["src/**/*.ts"],
