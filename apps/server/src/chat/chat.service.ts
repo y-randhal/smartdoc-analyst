@@ -43,12 +43,21 @@ export class ChatService {
     return this.ragService;
   }
 
+  private toChatHistory(messages: { role: string; content: string }[]) {
+    return messages.map((m) => ({
+      role: m.role as 'user' | 'assistant',
+      content: m.content,
+    }));
+  }
+
   /**
    * Process user prompt: retrieve context from Pinecone, generate LLM response
    */
-  async processPrompt(prompt: string): Promise<ChatResponse> {
+  async processPrompt(prompt: string, conversationId?: string): Promise<ChatResponse> {
     const rag = this.getRAGService();
-    const { answer, sources } = await rag.generateResponse(prompt);
+    const conv = conversationId ? this.conversationsService.get(conversationId) : null;
+    const chatHistory = conv ? this.toChatHistory(conv.messages) : [];
+    const { answer, sources } = await rag.generateResponse(prompt, 4, chatHistory);
 
     const documentSources: DocumentSource[] = sources.map((s) => ({
       id: s.id,
@@ -71,6 +80,7 @@ export class ChatService {
     conversationId?: string
   ): AsyncGenerator<{ content?: string; sources?: DocumentSource[]; conversationId?: string }> {
     const conv = this.conversationsService.getOrCreate(conversationId);
+    const chatHistory = this.toChatHistory(conv.messages);
     const userMsgId = crypto.randomUUID();
     const assistantMsgId = crypto.randomUUID();
 
@@ -86,7 +96,7 @@ export class ChatService {
     const rag = this.getRAGService();
     let fullContent = '';
 
-    for await (const event of rag.generateResponseStream(prompt)) {
+    for await (const event of rag.generateResponseStream(prompt, 4, chatHistory)) {
       if (event.type === 'chunk') {
         fullContent += event.content;
         yield { content: event.content, conversationId: conv.id };

@@ -16,10 +16,16 @@ const RAG_PROMPT_TEMPLATE = `You are SmartDoc Analyst, a helpful assistant that 
 
 Context from documents:
 {context}
+{chat_history}
 
-User question: {question}
+Current question: {question}
 
-Provide a clear and accurate answer based only on the context above. If the context doesn't contain relevant information, say so.`;
+Provide a clear and accurate answer based on the context above. Use the conversation history for continuity when relevant. If the context doesn't contain relevant information, say so.`;
+
+export interface ChatHistoryEntry {
+  role: 'user' | 'assistant';
+  content: string;
+}
 
 export class RAGService {
   private llm: ChatGroq;
@@ -79,18 +85,30 @@ export class RAGService {
     }));
   }
 
+  private formatChatHistory(history: ChatHistoryEntry[]): string {
+    if (!history?.length) return '';
+    const lines = history.map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content.trim()}`);
+    return `\nPrevious conversation:\n${lines.join('\n')}\n`;
+  }
+
   /**
    * Generate response using RAG pipeline
    */
-  async generateResponse(prompt: string, topK = 4): Promise<{ answer: string; sources: RetrievedDocument[] }> {
+  async generateResponse(
+    prompt: string,
+    topK = 4,
+    chatHistory: ChatHistoryEntry[] = []
+  ): Promise<{ answer: string; sources: RetrievedDocument[] }> {
     const sources = await this.retrieveDocuments(prompt, topK);
     const context = sources.map((s) => s.content).join('\n\n---\n\n');
+    const historyBlock = this.formatChatHistory(chatHistory);
 
     const promptTemplate = PromptTemplate.fromTemplate(RAG_PROMPT_TEMPLATE);
     const chain = promptTemplate.pipe(this.llm).pipe(new StringOutputParser());
 
     const answer = await chain.invoke({
       context: context || 'No relevant documents found.',
+      chat_history: historyBlock,
       question: prompt,
     });
 
@@ -105,16 +123,19 @@ export class RAGService {
    */
   async *generateResponseStream(
     prompt: string,
-    topK = 4
+    topK = 4,
+    chatHistory: ChatHistoryEntry[] = []
   ): AsyncGenerator<{ type: 'chunk'; content: string } | { type: 'sources'; sources: RetrievedDocument[] }> {
     const sources = await this.retrieveDocuments(prompt, topK);
     const context = sources.map((s) => s.content).join('\n\n---\n\n');
+    const historyBlock = this.formatChatHistory(chatHistory);
 
     const promptTemplate = PromptTemplate.fromTemplate(RAG_PROMPT_TEMPLATE);
     const chain = promptTemplate.pipe(this.llm).pipe(new StringOutputParser());
 
     const stream = await chain.stream({
       context: context || 'No relevant documents found.',
+      chat_history: historyBlock,
       question: prompt,
     });
 

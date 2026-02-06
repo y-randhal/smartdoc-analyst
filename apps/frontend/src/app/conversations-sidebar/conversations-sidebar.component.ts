@@ -9,7 +9,7 @@ import type { ChatMessage, Conversation } from '@smartdoc-analyst/api-interfaces
   standalone: true,
   imports: [CommonModule],
   template: `
-    <aside class="w-64 shrink-0 border-r border-slate-800 flex flex-col bg-slate-900/30">
+    <aside class="w-64 shrink-0 h-full min-h-0 border-r border-slate-800 flex flex-col bg-slate-900/30">
       <div class="p-3 border-b border-slate-800">
         <button
           (click)="newChat()"

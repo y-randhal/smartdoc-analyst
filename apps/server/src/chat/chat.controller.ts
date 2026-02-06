@@ -9,7 +9,7 @@ export class ChatController {
 
   @Post()
   async sendMessage(@Body() dto: ChatRequestDto) {
-    return this.chatService.processPrompt(dto.prompt);
+    return this.chatService.processPrompt(dto.prompt, dto.conversationId);
   }
 
   @Post('stream')

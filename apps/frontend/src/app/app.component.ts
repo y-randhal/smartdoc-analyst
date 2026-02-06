@@ -7,7 +7,7 @@ import { ConversationsSidebarComponent } from './conversations-sidebar/conversat
   standalone: true,
   imports: [RouterOutlet, ConversationsSidebarComponent],
   template: `
-    <div class="min-h-screen bg-slate-950 text-slate-100 flex">
+    <div class="h-screen min-h-0 bg-slate-950 text-slate-100 flex">
       <app-conversations-sidebar />
       <div class="flex-1 flex flex-col min-w-0">
         <header class="border-b border-slate-800 px-6 py-4 shrink-0">
