@@ -1,11 +1,13 @@
 # SmartDoc Analyst
 
 [![CI](https://github.com/y-randhal/smartdoc-analyst/actions/workflows/ci.yml/badge.svg)](https://github.com/y-randhal/smartdoc-analyst/actions)
+[![Coverage](https://codecov.io/gh/y-randhal/smartdoc-analyst/branch/main/graph/badge.svg)](https://codecov.io/gh/y-randhal/smartdoc-analyst)
 [![Node 20](https://img.shields.io/badge/Node-20-339933?logo=node.js)](https://nodejs.org)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker)](./docker-compose.yml)
 [![Angular](https://img.shields.io/badge/Angular-17+-DD0031?logo=angular)](https://angular.io)
 [![NestJS](https://img.shields.io/badge/NestJS-E0234E?logo=nestjs)](https://nestjs.com)
 [![RAG](https://img.shields.io/badge/RAG-LangChain-1C3C3C)](https://js.langchain.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Strict-3178C6?logo=typescript)](https://www.typescriptlang.org)
 [![License](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
 
 RAG (Retrieval Augmented Generation) application for document analysis. Upload PDFs, ask questions, get AI-powered answers with source citations. Built with NX monorepo, LangChain, Groq, and Pinecone.
@@ -155,10 +157,14 @@ Interactive API documentation is available via Swagger/OpenAPI:
 
 GitHub Actions runs on every push and pull request to `main`/`master`:
 
-- **Tests**: Server unit + e2e + Frontend unit tests (mock API keys in CI)
-- **Build**: All apps and libs
+- **Lint**: Code quality checks across all projects
+- **Tests**: Server unit + e2e + Frontend unit tests with coverage reporting (mock API keys in CI)
+- **Build**: All apps and libs in production mode
+- **Security**: Automated security scanning with npm audit and Snyk
 
 See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+
+**Dependencies**: Automated dependency updates via [Dependabot](.github/dependabot.yml).
 
 **Health check:** 
 - `GET /health` - Quick check (environment variables only)
@@ -212,6 +218,14 @@ HUGGINGFACE_API_KEY=your_key_here
 Docker Compose will automatically load these variables.
 
 ---
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on how to submit pull requests, report bugs, and suggest enhancements.
+
+## Security
+
+For security vulnerabilities, please see our [Security Policy](SECURITY.md).
 
 ## Architecture
 
