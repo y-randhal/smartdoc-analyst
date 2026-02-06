@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { RAGService } from '@smartdoc-analyst/ai-engine';
 import type { ChatResponse, DocumentSource } from '@smartdoc-analyst/api-interfaces';
+import { ConversationsService } from '../conversations/conversations.service';
 
 /**
  * ChatService - Application service that orchestrates RAG flow
@@ -11,7 +12,10 @@ import type { ChatResponse, DocumentSource } from '@smartdoc-analyst/api-interfa
 export class ChatService {
   private ragService: RAGService | null = null;
 
-  constructor(private readonly config: ConfigService) {}
+  constructor(
+    private readonly config: ConfigService,
+    private readonly conversationsService: ConversationsService
+  ) {}
 
   /**
    * Lazy initialization of RAGService (depends on env vars)
@@ -57,5 +61,53 @@ export class ChatService {
       message: answer,
       sources: documentSources,
     };
+  }
+
+  /**
+   * Stream LLM response for a prompt, persisting to conversation
+   */
+  async *processPromptStream(
+    prompt: string,
+    conversationId?: string
+  ): AsyncGenerator<{ content?: string; sources?: DocumentSource[]; conversationId?: string }> {
+    const conv = this.conversationsService.getOrCreate(conversationId);
+    const userMsgId = crypto.randomUUID();
+    const assistantMsgId = crypto.randomUUID();
+
+    this.conversationsService.appendUserMessage(conv.id, {
+      id: userMsgId,
+      role: 'user',
+      content: prompt,
+      timestamp: new Date(),
+    });
+
+    yield { conversationId: conv.id };
+
+    const rag = this.getRAGService();
+    let fullContent = '';
+
+    for await (const event of rag.generateResponseStream(prompt)) {
+      if (event.type === 'chunk') {
+        fullContent += event.content;
+        yield { content: event.content, conversationId: conv.id };
+      } else if (event.type === 'sources') {
+        const sources = event.sources.map((s) => ({
+          id: s.id,
+          content: s.content,
+          metadata: s.metadata,
+          score: s.score,
+        }));
+
+        this.conversationsService.appendAssistantMessage(conv.id, {
+          id: assistantMsgId,
+          role: 'assistant',
+          content: fullContent,
+          timestamp: new Date(),
+          sources,
+        });
+
+        yield { sources, conversationId: conv.id };
+      }
+    }
   }
 }

@@ -1,13 +1,21 @@
-import { Component, inject } from '@angular/core';
+import {
+  Component,
+  inject,
+  ViewChild,
+  ElementRef,
+  AfterViewChecked,
+  ChangeDetectorRef,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ChatService } from '../services/chat.service';
 import { DocumentsService, type UploadResult } from '../services/documents.service';
+import { MarkdownPipe } from '../pipes/markdown.pipe';
 
 @Component({
   selector: 'app-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, MarkdownPipe],
   template: `
     <div class="flex flex-col h-[calc(100vh-120px)] max-w-4xl mx-auto px-4 py-6">
       <!-- Upload area -->
@@ -39,7 +47,8 @@ import { DocumentsService, type UploadResult } from '../services/documents.servi
 
       <!-- Messages area -->
       <div
-        class="flex-1 overflow-y-auto space-y-4 mb-4 rounded-lg bg-slate-900/50 p-4 border border-slate-800"
+        #messagesContainer
+        class="flex-1 overflow-y-auto space-y-4 mb-4 rounded-lg bg-slate-900/50 p-4 border border-slate-800 scroll-smooth"
       >
         @if (chatService.getMessages().length === 0) {
           <div class="flex flex-col items-center justify-center h-full text-slate-500">
@@ -58,21 +67,68 @@ import { DocumentsService, type UploadResult } from '../services/documents.servi
               <p class="text-sm text-slate-300 mb-1">
                 {{ msg.role === 'user' ? 'You' : 'Assistant' }}
               </p>
-              <p class="whitespace-pre-wrap">{{ msg.content }}</p>
+              @if (msg.role === 'user') {
+                <p class="whitespace-pre-wrap">{{ msg.content }}</p>
+              } @else {
+                <div class="markdown-content text-slate-200 text-sm [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0 [&_code]:bg-slate-700 [&_code]:px-1 [&_code]:rounded [&_pre]:bg-slate-800 [&_pre]:p-2 [&_pre]:rounded [&_pre]:overflow-x-auto [&_a]:text-emerald-400 [&_a]:underline">
+                  @if (msg.content) {
+                    <div [innerHTML]="msg.content | markdown"></div>
+                  }
+                  @if ((chatService.loading$ | async) && !msg.content) {
+                    <span class="inline-flex items-center gap-1 text-slate-400">
+                      <span class="animate-pulse">Thinking</span>
+                      <span class="inline-block w-2 h-4 bg-emerald-400 animate-pulse"></span>
+                    </span>
+                  }
+                </div>
+              }
+              @if (msg.role === 'assistant' && msg.sources && msg.sources.length > 0) {
+                <div class="mt-3 pt-3 border-t border-slate-600">
+                  <p class="text-xs text-slate-500 mb-2">Sources ({{ msg.sources.length }})</p>
+                  <div class="space-y-2 max-h-32 overflow-y-auto">
+                    @for (src of msg.sources; track src.id) {
+                      <details class="group">
+                        <summary class="text-xs text-emerald-400/80 cursor-pointer hover:text-emerald-400">
+                          {{ src.metadata?.['source'] ?? src.metadata?.['filename'] ?? 'Document' }}
+                          @if (src.score !== undefined) {
+                            <span class="text-slate-500 ml-1">({{ (src.score * 100).toFixed(0) }}% match)</span>
+                          }
+                        </summary>
+                        <p class="mt-1 text-xs text-slate-400 line-clamp-3">{{ src.content }}</p>
+                      </details>
+                    }
+                  </div>
+                </div>
+              }
             </div>
           }
-          @if (chatService.loading$ | async) {
+          @if ((chatService.loading$ | async) && (chatService.getMessages().length === 0 || chatService.getMessages()[chatService.getMessages().length - 1]?.role !== 'assistant')) {
             <div class="mr-auto max-w-[80%] bg-slate-800 rounded-lg px-4 py-2 border border-slate-700">
               <p class="text-sm text-slate-400">Thinking...</p>
             </div>
           }
         }
+        <div #scrollAnchor></div>
       </div>
 
       <!-- Error display -->
       @if (chatService.error$ | async; as error) {
-        <div class="mb-4 p-3 rounded-lg bg-red-900/30 border border-red-500/50 text-red-300 text-sm">
-          {{ error }}
+        <div class="mb-4 p-3 rounded-lg bg-red-900/30 border border-red-500/50 text-red-300 text-sm flex items-center justify-between gap-3">
+          <span>{{ error }}</span>
+          <div class="flex gap-2 shrink-0">
+            <button
+              (click)="retryLastMessage()"
+              class="px-2 py-1 rounded bg-red-800/50 hover:bg-red-800 text-sm"
+            >
+              Retry
+            </button>
+            <button
+              (click)="chatService.clearError()"
+              class="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-sm"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       }
 
@@ -107,19 +163,56 @@ import { DocumentsService, type UploadResult } from '../services/documents.servi
     </div>
   `,
 })
-export class ChatComponent {
+export class ChatComponent implements AfterViewChecked {
+  @ViewChild('messagesContainer') private messagesContainer?: ElementRef<HTMLDivElement>;
+  @ViewChild('scrollAnchor') private scrollAnchor?: ElementRef<HTMLDivElement>;
+
   readonly chatService = inject(ChatService);
   readonly documentsService = inject(DocumentsService);
+  private cdr = inject(ChangeDetectorRef);
+
   prompt = '';
   uploading = false;
   uploadError = '';
   uploadSuccess = '';
+  private lastMessageCount = 0;
+  private lastContentLength = 0;
+
+  ngAfterViewChecked(): void {
+    const messages = this.chatService.getMessages();
+    const count = messages.length;
+    const lastMsg = messages[count - 1];
+    const contentLen = lastMsg?.role === 'assistant' ? lastMsg.content.length : 0;
+
+    if (count > this.lastMessageCount || contentLen > this.lastContentLength) {
+      this.lastMessageCount = count;
+      this.lastContentLength = contentLen;
+      setTimeout(() => this.scrollToBottom(), 0);
+    }
+  }
+
+  private scrollToBottom(): void {
+    this.scrollAnchor?.nativeElement?.scrollIntoView({ behavior: 'smooth' });
+  }
 
   onSubmit(): void {
     const p = this.prompt.trim();
     if (!p) return;
+    this.chatService.clearError();
     this.chatService.sendMessage(p).subscribe();
     this.prompt = '';
+  }
+
+  retryLastMessage(): void {
+    const messages = this.chatService.getMessages();
+    const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+    if (lastUser?.content) {
+      this.chatService.removeLastAssistantMessage();
+      this.chatService.clearError();
+      this.chatService.sendMessage(lastUser.content).subscribe();
+    } else {
+      this.chatService.clearError();
+    }
   }
 
   onFileSelected(event: Event): void {

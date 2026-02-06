@@ -1,20 +1,14 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import {
-  BehaviorSubject,
-  Observable,
-  catchError,
-  map,
-  of,
-  switchMap,
-  tap,
-} from 'rxjs';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { environment } from '../../environments/environment';
 import type {
   ChatMessage,
   ChatRequest,
   ChatResponse,
+  DocumentSource,
 } from '@smartdoc-analyst/api-interfaces';
+import { ConversationsService } from './conversations.service';
 
 /**
  * ChatService - RxJS-based service for managing chat message stream
@@ -26,15 +20,22 @@ export class ChatService {
   private readonly messagesSubject = new BehaviorSubject<ChatMessage[]>([]);
   private readonly loadingSubject = new BehaviorSubject<boolean>(false);
   private readonly errorSubject = new BehaviorSubject<string | null>(null);
+  private readonly conversationIdSubject = new BehaviorSubject<string | null>(null);
+  private readonly conversationsService = inject(ConversationsService);
 
   readonly messages$ = this.messagesSubject.asObservable();
   readonly loading$ = this.loadingSubject.asObservable();
   readonly error$ = this.errorSubject.asObservable();
+  readonly conversationId$ = this.conversationIdSubject.asObservable();
 
   constructor(private readonly http: HttpClient) {}
 
+  getConversationId(): string | null {
+    return this.conversationIdSubject.value;
+  }
+
   /**
-   * Send a prompt and append user message, then stream/append assistant response
+   * Send a prompt and stream assistant response in real time
    */
   sendMessage(prompt: string): Observable<ChatResponse> {
     this.errorSubject.next(null);
@@ -47,30 +48,100 @@ export class ChatService {
       timestamp: new Date(),
     };
 
-    this.messagesSubject.next([...this.messagesSubject.value, userMessage]);
+    const assistantId = crypto.randomUUID();
+    const assistantMessage: ChatMessage = {
+      id: assistantId,
+      role: 'assistant',
+      content: '',
+      timestamp: new Date(),
+      sources: [],
+    };
 
-    const request: ChatRequest = { prompt };
+    this.messagesSubject.next([
+      ...this.messagesSubject.value,
+      userMessage,
+      assistantMessage,
+    ]);
 
-    return this.http.post<ChatResponse>(this.apiUrl, request).pipe(
-      tap((response) => {
-        const assistantMessage: ChatMessage = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: response.message,
-          timestamp: new Date(),
+    const request: ChatRequest = {
+      prompt,
+      conversationId: this.conversationIdSubject.value ?? undefined,
+    };
+
+    fetch(`${this.apiUrl}/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(request),
+    })
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(res.statusText || 'Stream request failed');
+        }
+        const reader = res.body?.getReader();
+        if (!reader) throw new Error('No response body');
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        let accumulatedContent = '';
+
+        const updateAssistant = (updates: Partial<ChatMessage>) => {
+          const messages = this.messagesSubject.value;
+          const idx = messages.findIndex((m) => m.id === assistantId);
+          if (idx === -1) return;
+          messages[idx] = { ...messages[idx], ...updates };
+          this.messagesSubject.next([...messages]);
         };
-        this.messagesSubject.next([
-          ...this.messagesSubject.value,
-          assistantMessage,
-        ]);
-        this.loadingSubject.next(false);
-      }),
-      catchError((err) => {
-        this.loadingSubject.next(false);
-        this.errorSubject.next(err?.message ?? 'Failed to get response');
-        return of({ message: '', sources: [] });
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() ?? '';
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+              try {
+                const event = JSON.parse(line) as {
+                  content?: string;
+                  sources?: DocumentSource[];
+                  conversationId?: string;
+                  error?: string;
+                };
+                if (event.error) {
+                  this.errorSubject.next(event.error);
+                  break;
+                }
+                if (event.conversationId) {
+                  this.conversationIdSubject.next(event.conversationId);
+                  this.conversationsService.refreshList();
+                }
+                if (event.content) {
+                  accumulatedContent += event.content;
+                  updateAssistant({ content: accumulatedContent });
+                }
+                if (event.sources) {
+                  updateAssistant({ sources: event.sources });
+                }
+              } catch {
+                // skip malformed lines
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
+        }
       })
-    );
+      .catch((err) => {
+        this.errorSubject.next(err?.message ?? 'Failed to get response');
+      })
+      .finally(() => {
+        this.loadingSubject.next(false);
+      });
+
+    return of({ message: '', sources: [] });
   }
 
   /**
@@ -80,11 +151,33 @@ export class ChatService {
     return this.messagesSubject.value;
   }
 
+  clearError(): void {
+    this.errorSubject.next(null);
+  }
+
+  removeLastAssistantMessage(): void {
+    const messages = this.messagesSubject.value;
+    const last = messages[messages.length - 1];
+    if (last?.role === 'assistant') {
+      this.messagesSubject.next(messages.slice(0, -1));
+    }
+  }
+
   /**
-   * Clear chat history
+   * Clear chat history and start new conversation
    */
   clearMessages(): void {
     this.messagesSubject.next([]);
+    this.conversationIdSubject.next(null);
+    this.errorSubject.next(null);
+  }
+
+  /**
+   * Load a conversation and set as current
+   */
+  loadConversation(messages: ChatMessage[], conversationId: string): void {
+    this.messagesSubject.next(messages);
+    this.conversationIdSubject.next(conversationId);
     this.errorSubject.next(null);
   }
 }

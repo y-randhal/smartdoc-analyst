@@ -99,4 +99,31 @@ export class RAGService {
       sources,
     };
   }
+
+  /**
+   * Stream response using RAG pipeline
+   */
+  async *generateResponseStream(
+    prompt: string,
+    topK = 4
+  ): AsyncGenerator<{ type: 'chunk'; content: string } | { type: 'sources'; sources: RetrievedDocument[] }> {
+    const sources = await this.retrieveDocuments(prompt, topK);
+    const context = sources.map((s) => s.content).join('\n\n---\n\n');
+
+    const promptTemplate = PromptTemplate.fromTemplate(RAG_PROMPT_TEMPLATE);
+    const chain = promptTemplate.pipe(this.llm).pipe(new StringOutputParser());
+
+    const stream = await chain.stream({
+      context: context || 'No relevant documents found.',
+      question: prompt,
+    });
+
+    for await (const chunk of stream) {
+      if (typeof chunk === 'string' && chunk) {
+        yield { type: 'chunk', content: chunk };
+      }
+    }
+
+    yield { type: 'sources', sources };
+  }
 }
