@@ -47,24 +47,30 @@ import { MarkdownPipe } from '../pipes/markdown.pipe';
         <!-- Indexed documents -->
         <details class="mt-3" [open]="documentsExpanded">
           <summary class="text-sm text-slate-400 cursor-pointer hover:text-slate-300">
-            Indexed documents ({{ (documentsService.documents$ | async)?.length ?? 0 }})
+            @if (documentsService.documents$ | async; as documents) {
+              Indexed documents ({{ documents.length }})
+            } @else {
+              Indexed documents (0)
+            }
           </summary>
           <div class="mt-2 space-y-1 max-h-32 overflow-y-auto">
-            @if ((documentsService.documents$ | async)?.length === 0) {
-              <p class="text-xs text-slate-500">No documents indexed yet</p>
-            } @else {
-              @for (doc of (documentsService.documents$ | async) ?? []; track doc.id) {
-                <div class="flex items-center justify-between gap-2 py-1 px-2 rounded bg-slate-800/50 text-sm">
-                  <span class="truncate text-slate-300">{{ doc.filename }}</span>
-                  <span class="text-xs text-slate-500 shrink-0">{{ doc.chunks }} chunks</span>
-                  <button
-                    (click)="deleteDocument(doc.id)"
-                    class="shrink-0 p-1 text-slate-500 hover:text-red-400 transition-colors"
-                    title="Remove from index"
-                  >
-                    ×
-                  </button>
-                </div>
+            @if (documentsService.documents$ | async; as documents) {
+              @if (documents.length === 0) {
+                <p class="text-xs text-slate-500">No documents indexed yet</p>
+              } @else {
+                @for (doc of documents; track doc.id) {
+                  <div class="flex items-center justify-between gap-2 py-1 px-2 rounded bg-slate-800/50 text-sm">
+                    <span class="truncate text-slate-300">{{ doc.filename }}</span>
+                    <span class="text-xs text-slate-500 shrink-0">{{ doc.chunks }} chunks</span>
+                    <button
+                      (click)="deleteDocument(doc.id)"
+                      class="shrink-0 p-1 text-slate-500 hover:text-red-400 transition-colors"
+                      title="Remove from index"
+                    >
+                      ×
+                    </button>
+                  </div>
+                }
               }
             }
           </div>

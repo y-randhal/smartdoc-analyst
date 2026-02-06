@@ -168,4 +168,6 @@ Docker Compose will automatically load these variables.
 - **DocumentsModule**: Upload PDF/TXT/MD files; parses, chunks, embeds, and upserts to Pinecone. Registry persisted to `data/documents.json`. `POST /api/documents/upload-stream` streams progress (parsing → chunking → indexing)
 - **ConversationsModule**: Persists conversations to `data/conversations.json` (survives server restart)
 - **ChatService** (frontend): RxJS-based reactive stream for chat messages
+- **HTTP Interceptors**: Global error handling, loading states, and automatic retry for transient failures
+- **Performance**: Optimized template subscriptions to prevent memory leaks
 - **Security**: Markdown sanitization prevents XSS attacks in AI-generated content
