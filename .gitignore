@@ -36,7 +36,12 @@ node_modules
 npm-debug.log
 yarn-error.log
 testem.log
+debug.log
+*.log
 /typings
+
+# Angular build cache
+.angular/cache
 
 # System Files
 .DS_Store
