@@ -38,6 +38,10 @@ interface UploadedFileShape {
   size: number;
 }
 
+interface ResponseWithFlush extends Response {
+  flush?: () => void;
+}
+
 @ApiTags('documents')
 @Controller('documents')
 export class DocumentsController {
@@ -210,7 +214,7 @@ export class DocumentsController {
         mimeType
       )) {
         res.write(JSON.stringify(event) + '\n');
-        (res as any).flush?.();
+        (res as ResponseWithFlush).flush?.();
       }
     } catch (err) {
       res.write(JSON.stringify({ error: (err as Error).message }) + '\n');

@@ -73,7 +73,9 @@ describe('ChatService', () => {
       const result = await service.processPrompt('Hello');
       expect(result.message).toBe('Test answer');
       expect(result.sources).toHaveLength(1);
-      expect(result.sources![0].id).toBe('s1');
+      if (result.sources && result.sources.length > 0) {
+        expect(result.sources[0].id).toBe('s1');
+      }
       expect(mockGenerateResponse).toHaveBeenCalledWith('Hello', 4, []);
     });
 

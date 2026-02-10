@@ -4,6 +4,10 @@ import { Response } from 'express';
 import { ChatService } from './chat.service';
 import { ChatRequestDto, ChatResponseDto } from './dto';
 
+interface ResponseWithFlush extends Response {
+  flush?: () => void;
+}
+
 @ApiTags('chat')
 @Controller('chat')
 export class ChatController {
@@ -58,7 +62,7 @@ export class ChatController {
     try {
       for await (const event of this.chatService.processPromptStream(dto.prompt, dto.conversationId)) {
         res.write(JSON.stringify(event) + '\n');
-        (res as any).flush?.();
+        (res as ResponseWithFlush).flush?.();
       }
     } catch (err) {
       res.write(JSON.stringify({ error: (err as Error).message }) + '\n');
